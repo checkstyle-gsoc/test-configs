@@ -13,7 +13,7 @@ if [ -d ".ci-temp/checkstyle" ]; then
     cd ../..
 else
     echo "Cloning Checkstyle repository..."
-    git clone --depth 1 --branch master https://github.com/checkstyle/checkstyle.git .ci-temp/checkstyle
+    git clone --depth 1 --branch master https://github.com/checkstyle-gsoc/checkstyle.git .ci-temp/checkstyle
 fi
 
 echo "Checkstyle repository is now up to date with the latest master branch."
