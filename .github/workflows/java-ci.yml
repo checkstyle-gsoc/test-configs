@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   build-and-test:
@@ -102,10 +103,10 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             PR_BRANCH="${{ github.head_ref }}"  # Source branch for PRs
           else
-            PR_BRANCH="${{ github.ref_name }}"  # Current branch for push events
+            PR_BRANCH="${{ github.ref_name }}"   # Current branch for push events
           fi
           REPO="${{ github.workspace }}/checkstyle"
-          BASE_BRANCH="upstream/main"  # Ensure this branch exists or update accordingly
+          BASE_BRANCH="main"  # Update this if 'checkstyle' uses a different default branch
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
           PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
@@ -148,7 +149,7 @@ jobs:
       #     if [ "${{ github.event_name }}" = "pull_request" ]; then
       #       PR_BRANCH="${{ github.head_ref }}"  # Source branch for PRs
       #     else
-      #       PR_BRANCH="${{ github.ref_name }}"  # Current branch for push events
+      #       PR_BRANCH="${{ github.ref_name }}"   # Current branch for push events
       #     fi
       #     REPO="${{ github.workspace }}/checkstyle"
       #     CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
