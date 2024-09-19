@@ -134,7 +134,9 @@ jobs:
           DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
           echo "Default branch: $DEFAULT_BRANCH"
 
-          cd .ci-temp/test-configs/checkstyle-tester
+          echo "Current working directory:"
+          pwd
+
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "$DIFFTOOL_JAR" \
