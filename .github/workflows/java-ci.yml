@@ -106,39 +106,39 @@ jobs:
             PR_BRANCH="${{ github.ref_name }}"   # Current branch for push events
           fi
           REPO="${{ github.workspace }}/checkstyle"
-          BASE_BRANCH="main"  # Update this if 'checkstyle' uses a different default branch
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
           PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-
+      
           # Log variables
           echo "PR_BRANCH: $PR_BRANCH"
           echo "REPO: $REPO"
-          echo "BASE_BRANCH: $BASE_BRANCH"
           echo "CONFIG_XML: $CONFIG_XML"
           echo "PROJECTS_PROPERTIES: $PROJECTS_PROPERTIES"
           echo "DIFFTOOL_JAR: $DIFFTOOL_JAR"
-
+      
           # Ensure the localGitRepo exists
           if [ ! -d "$REPO/.git" ]; then
             echo "Cloning checkstyle repository into $REPO"
-            git clone https://github.com/checkstyle/checkstyle.git "$REPO"
+            git clone https://github.com/checkstyle/checkstyle.git "$REPO" || { echo "Failed to clone repository"; exit 1; }
           fi
-
-          # Fetch the base branch
-          cd "$REPO"
-          echo "Fetching base branch $BASE_BRANCH"
-          git fetch origin "$BASE_BRANCH"
-
+      
+          # Fetch the default branch
+          cd "$REPO" || { echo "Failed to change directory to $REPO"; exit 1; }
+          echo "Fetching default branch"
+          git fetch origin || { echo "Failed to fetch from origin"; exit 1; }
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
+          echo "Default branch: $DEFAULT_BRANCH"
+      
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "../$DIFFTOOL_JAR" \
             --localGitRepo "$REPO" \
-            --baseBranch "$BASE_BRANCH" \
+            --baseBranch "$DEFAULT_BRANCH" \
             --baseConfig "$CONFIG_XML" \
             --patchBranch "$PR_BRANCH" \
             --patchConfig "$CONFIG_XML" \
-            --listOfProjects "$PROJECTS_PROPERTIES"
+            --listOfProjects "$PROJECTS_PROPERTIES" || { echo "DiffTool execution failed"; exit 1; }
 
       # 11. Execute DiffTool.jar in 'single' mode (optional, after 'diff' mode is stable)
       # - name: Execute DiffTool.jar in Single Mode
