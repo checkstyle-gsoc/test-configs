@@ -1,0 +1,109 @@
+name: CI/CD for DiffTool
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      JAVA_VERSION: '21'
+      CONFIG_DIR: '.ci-config'
+      DIFF_TOOL_JAR: 'diff-java-tool/build/libs/diff-java-tool-*.jar'
+      EXTRACTOR_VERSION: '2024-08-27'
+      PATCH_DIFF_TOOL_VERSION: '0.1-SNAPSHOT'
+
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Set up JDK 21
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      # 3. Cache Maven dependencies
+      - name: Cache Maven Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-
+
+      # 4. Build the project with Gradle
+      - name: Build with Gradle
+        run: |
+          cd diff-java-tool
+          ./gradlew clean build
+
+      # 5. Run unit tests
+      - name: Run Unit Tests
+        run: |
+          cd diff-java-tool
+          ./gradlew test
+
+      # 6. Execute DiffTool.jar in 'diff' mode
+      - name: Execute DiffTool.jar in Diff Mode
+        run: |
+          java -jar ${{ env.DIFF_TOOL_JAR }} \
+            --localGitRepo ${{ github.workspace }}/checkstyle \
+            --baseBranch upstream/master \
+            --baseConfig ${{ env.CONFIG_DIR }}/config.xml \
+            --patchBranch master \
+            --patchConfig ${{ env.CONFIG_DIR }}/config.xml \
+            --listOfProjects ${{ env.CONFIG_DIR }}/projects.properties
+
+      # 7. Execute DiffTool.jar in 'single' mode
+      - name: Execute DiffTool.jar in Single Mode
+        run: |
+          java -jar ${{ env.DIFF_TOOL_JAR }} \
+            --localGitRepo ${{ github.workspace }}/checkstyle \
+            --patchBranch feature/single-mode \
+            --patchConfig ${{ env.CONFIG_DIR }}/config.xml \
+            --listOfProjects ${{ env.CONFIG_DIR }}/projects.properties \
+            --mode single
+
+      # 8. Execute DiffTool.jar with invalid arguments to print help
+      - name: Execute DiffTool.jar with Invalid Arguments
+        run: |
+          java -jar ${{ env.DIFF_TOOL_JAR }} --invalidArg
+
+      # 9. Download Patch Diff Report Tool
+      - name: Download Patch Diff Report Tool
+        uses: actions/download-artifact@v3
+        with:
+          name: patch-diff-report-tool
+          path: .ci-temp/patch-diff-report-tool
+
+      # 10. Verify no exceptions occurred during DiffTool execution
+      - name: Verify DiffTool Execution
+        run: |
+          # This step is implicitly handled by previous steps. If any step fails, the job fails.
+          echo "DiffTool executed successfully."
+
+      # 11. Upload build reports and logs on failure
+      - name: Upload Build Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            diff-java-tool/build/reports
+            diff-java-tool/build/test-results
+            .ci-temp/patch-diff-report-tool
+
+      # 12. Cleanup (optional)
+      - name: Cleanup Temporary Files
+        if: always()
+        run: |
+          rm -rf .ci-temp
+
