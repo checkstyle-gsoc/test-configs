@@ -108,7 +108,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             PR_BRANCH="${{ github.head_ref }}"  # Source branch for PRs
           else
-            PR_BRANCH="${{ github.ref_name }}"   # Current branch for push events
+            PR_BRANCH="master"   # Use the default branch for push events
           fi
           REPO="${{ github.workspace }}/checkstyle"
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
@@ -152,7 +152,7 @@ jobs:
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "$DIFFTOOL_JAR" \
             --localGitRepo "$REPO" \
-            --baseBranch "$DEFAULT_BRANCH" \
+            --baseBranch "master" \
             --baseConfig "$CONFIG_XML" \
             --patchBranch "$PR_BRANCH" \
             --patchConfig "$CONFIG_XML" \
