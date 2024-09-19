@@ -121,11 +121,6 @@ jobs:
           echo "PROJECTS_PROPERTIES: $PROJECTS_PROPERTIES"
           echo "DIFFTOOL_JAR: $DIFFTOOL_JAR"
       
-          # Ensure the localGitRepo exists
-          if [ ! -d "$REPO/.git" ]; then
-            echo "Cloning checkstyle repository into $REPO"
-            git clone https://github.com/checkstyle/checkstyle.git "$REPO" || { echo "Failed to clone repository"; exit 1; }
-          fi
       
           # Fetch the default branch
           cd "$REPO" || { echo "Failed to change directory to $REPO"; exit 1; }
