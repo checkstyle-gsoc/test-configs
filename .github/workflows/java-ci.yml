@@ -137,9 +137,10 @@ jobs:
           echo "dir current"
           pwd
 
-          cd ..
-
-          cho "dir current"
+          # Return to the checkstyle-tester directory
+          cd ../../../.ci-temp/test-configs/checkstyle-tester || { echo "Failed to return to checkstyle-tester directory"; exit 1; }
+          
+          echo "Current directory (should be checkstyle-tester):"
           pwd
       
           # Run DiffTool in 'diff' mode
