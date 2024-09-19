@@ -75,6 +75,7 @@ jobs:
           curl --fail-with-body -L -o \
           .ci-temp/test-configs/checkstyle-tester/pom.xml "${{ env.POM_URL }}"
 
+
       # 8. Download DiffTool JAR
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
