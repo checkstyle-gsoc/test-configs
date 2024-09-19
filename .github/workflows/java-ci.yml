@@ -105,7 +105,7 @@ jobs:
             PR_BRANCH="${{ github.ref_name }}"  # Current branch for push events
           fi
           REPO="${{ github.workspace }}/checkstyle"
-          BASE_BRANCH="upstream/master"  # Ensure this branch exists or update accordingly
+          BASE_BRANCH="upstream/main"  # Ensure this branch exists or update accordingly
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
           PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
