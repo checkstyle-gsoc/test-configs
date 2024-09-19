@@ -109,7 +109,11 @@ jobs:
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
           PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-      
+
+          echo "Contents of .ci-temp/checkstyle-tester:"
+          ls -la
+          echo "-------------------------"
+          
           # Log variables
           echo "PR_BRANCH: $PR_BRANCH"
           echo "REPO: $REPO"
