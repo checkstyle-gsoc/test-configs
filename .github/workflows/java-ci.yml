@@ -97,23 +97,51 @@ jobs:
       # 10. Execute DiffTool.jar in 'diff' mode
       - name: Execute DiffTool.jar in Diff Mode
         run: |
-          # Stay in the current directory and use absolute paths
           cd .ci-temp/test-configs/checkstyle-tester
           
-          # ... (rest of the variable definitions)
+          # Define necessary variables based on event type
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            PR_BRANCH="${{ github.head_ref }}"  # Source branch for PRs
+          else
+            PR_BRANCH="${{ github.ref_name }}"   # Current branch for push events
+          fi
+          REPO="${{ github.workspace }}/checkstyle"
+          CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
+          PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
+          DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
+
+          echo "Contents of .ci-temp/checkstyle-tester:"
+          ls -la
+          echo "-------------------------"
           
+          # Log variables
+          echo "PR_BRANCH: $PR_BRANCH"
+          echo "REPO: $REPO"
+          echo "CONFIG_XML: $CONFIG_XML"
+          echo "PROJECTS_PROPERTIES: $PROJECTS_PROPERTIES"
+          echo "DIFFTOOL_JAR: $DIFFTOOL_JAR"
+      
           # Ensure the localGitRepo exists
           if [ ! -d "$REPO/.git" ]; then
             echo "Cloning checkstyle repository into $REPO"
             git clone https://github.com/checkstyle/checkstyle.git "$REPO" || { echo "Failed to clone repository"; exit 1; }
           fi
-          
+      
           # Fetch the default branch
+          cd "$REPO" || { echo "Failed to change directory to $REPO"; exit 1; }
           echo "Fetching default branch"
-          git -C "$REPO" fetch origin || { echo "Failed to fetch from origin"; exit 1; }
-          DEFAULT_BRANCH=$(git -C "$REPO" symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
+          git fetch origin || { echo "Failed to fetch from origin"; exit 1; }
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
           echo "Default branch: $DEFAULT_BRANCH"
-          
+
+          echo "dir current"
+          pwd
+
+          cd ..
+
+          cho "dir current"
+          pwd
+      
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "$DIFFTOOL_JAR" \
