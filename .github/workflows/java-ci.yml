@@ -112,7 +112,7 @@ jobs:
           fi
           REPO="${{ github.workspace }}/checkstyle"
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
-          PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
+          PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/project.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
           
           echo "Contents of checkstyle-tester directory:"
@@ -125,7 +125,7 @@ jobs:
           echo "CONFIG_XML: $CONFIG_XML"
           echo "PROJECTS_PROPERTIES: $PROJECTS_PROPERTIES"
           echo "DIFFTOOL_JAR: $DIFFTOOL_JAR"
-          
+
           # Ensure the localGitRepo exists
           if [ ! -d "$REPO/.git" ]; then
             echo "Cloning checkstyle repository into $REPO"
