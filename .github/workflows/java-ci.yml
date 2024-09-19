@@ -97,11 +97,8 @@ jobs:
       # 10. Execute DiffTool.jar in 'diff' mode
       - name: Execute DiffTool.jar in Diff Mode
         run: |
-          # Start in the checkstyle-tester directory
+          # Stay in the current directory and use absolute paths
           cd .ci-temp/test-configs/checkstyle-tester
-          
-          # Store the current directory
-          CHECKSTYLE_TESTER_DIR=$(pwd)
           
           # ... (rest of the variable definitions)
           
@@ -117,11 +114,14 @@ jobs:
           DEFAULT_BRANCH=$(git -C "$REPO" symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
           echo "Default branch: $DEFAULT_BRANCH"
           
-          # Return to the checkstyle-tester directory
-          cd "$CHECKSTYLE_TESTER_DIR" || { echo "Failed to return to checkstyle-tester directory"; exit 1; }
-          
           # Print current working directory
           echo "Current working directory:"
+          pwd
+
+          cd ..
+
+          # Print current working directory
+          echo "Current working directory after a cd ..:"
           pwd
           
           # Run DiffTool in 'diff' mode
