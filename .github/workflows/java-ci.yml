@@ -136,7 +136,7 @@ jobs:
       
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
-          java -jar "../$DIFFTOOL_JAR" \
+          java -jar "$DIFFTOOL_JAR" \
             --localGitRepo "$REPO" \
             --baseBranch "$DEFAULT_BRANCH" \
             --baseConfig "$CONFIG_XML" \
