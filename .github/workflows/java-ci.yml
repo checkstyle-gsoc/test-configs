@@ -118,8 +118,6 @@ jobs:
           echo "Current working directory:"
           pwd
 
-          cd ..
-
           # Print current working directory
           echo "Current working directory after a cd ..:"
           pwd
