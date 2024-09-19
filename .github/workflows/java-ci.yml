@@ -114,14 +114,6 @@ jobs:
           DEFAULT_BRANCH=$(git -C "$REPO" symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
           echo "Default branch: $DEFAULT_BRANCH"
           
-          # Print current working directory
-          echo "Current working directory:"
-          pwd
-
-          # Print current working directory
-          echo "Current working directory after a cd ..:"
-          pwd
-          
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "$DIFFTOOL_JAR" \
