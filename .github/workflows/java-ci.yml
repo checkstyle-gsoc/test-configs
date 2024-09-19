@@ -97,7 +97,10 @@ jobs:
       # 10. Execute DiffTool.jar in 'diff' mode
       - name: Execute DiffTool.jar in Diff Mode
         run: |
-          cd .ci-temp/test-configs/checkstyle-tester
+          # Store the initial directory
+          INITIAL_DIR="${{ github.workspace }}/.ci-temp/test-configs/checkstyle-tester"
+          
+          cd "$INITIAL_DIR"
           
           # Define necessary variables based on event type
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -109,8 +112,8 @@ jobs:
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
           PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-
-          echo "Contents of .ci-temp/checkstyle-tester:"
+          
+          echo "Contents of checkstyle-tester directory:"
           ls -la
           echo "-------------------------"
           
@@ -120,29 +123,29 @@ jobs:
           echo "CONFIG_XML: $CONFIG_XML"
           echo "PROJECTS_PROPERTIES: $PROJECTS_PROPERTIES"
           echo "DIFFTOOL_JAR: $DIFFTOOL_JAR"
-      
+          
           # Ensure the localGitRepo exists
           if [ ! -d "$REPO/.git" ]; then
             echo "Cloning checkstyle repository into $REPO"
             git clone https://github.com/checkstyle/checkstyle.git "$REPO" || { echo "Failed to clone repository"; exit 1; }
           fi
-      
+          
           # Fetch the default branch
           cd "$REPO" || { echo "Failed to change directory to $REPO"; exit 1; }
           echo "Fetching default branch"
           git fetch origin || { echo "Failed to fetch from origin"; exit 1; }
           DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
           echo "Default branch: $DEFAULT_BRANCH"
-
-          echo "dir current"
+          
+          echo "Current directory (checkstyle repo):"
           pwd
-
-          # Return to the checkstyle-tester directory
-          cd ../../../.ci-temp/test-configs/checkstyle-tester || { echo "Failed to return to checkstyle-tester directory"; exit 1; }
+          
+          # Return to the initial directory (checkstyle-tester)
+          cd "$INITIAL_DIR" || { echo "Failed to return to initial directory"; exit 1; }
           
           echo "Current directory (should be checkstyle-tester):"
           pwd
-      
+          
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "$DIFFTOOL_JAR" \
