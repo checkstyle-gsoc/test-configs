@@ -82,7 +82,7 @@ jobs:
           cd .ci-temp/test-configs/checkstyle-tester
           
           # Define necessary variables
-          PR_BRANCH="${{ github.head_ref }}"  # For pull requests
+          PR_BRANCH=master
           REPO="${{ github.workspace }}/checkstyle"
           BASE_BRANCH="upstream/master"
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
