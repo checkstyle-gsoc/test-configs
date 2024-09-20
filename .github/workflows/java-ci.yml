@@ -95,9 +95,11 @@ jobs:
       - name: Prepare and Execute DiffTool
         run: |
           cd checkstyle-tester
-          echo "Contents of checkstyle-tester directory:"
+          echo "Current working directory:"
+          pwd
+          echo "Contents of current directory:"
           ls -la
-
+          
           # Define variables
           CHECKSTYLE_TESTER_DIR="${{ github.workspace }}/checkstyle-tester"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -134,7 +136,10 @@ jobs:
           cd "$CHECKSTYLE_TESTER_DIR" || { echo "Failed to return to checkstyle-tester directory"; exit 1; }
 
           # Ensure reports/diff directory exists and is not empty
+          echo "Creating reports/diff directory"
           mkdir -p reports/diff
+          echo "Contents of reports directory:"
+          ls -R reports
           if [ ! "$(ls -A reports/diff)" ]; then
             echo "reports/diff is empty, creating dummy file"
             touch reports/diff/dummy.txt
