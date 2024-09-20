@@ -18,7 +18,6 @@ jobs:
       PATCH_DIFF_TOOL_VERSION: "0.1-SNAPSHOT"
 
     steps:
-      # 1. Checkout the repository
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
@@ -27,7 +26,6 @@ jobs:
           clean: true
           fetch-depth: 1
 
-      # 2. Set up JDK 21
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -35,7 +33,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'gradle'
 
-      # 3. Cache Maven dependencies
       - name: Cache Maven Dependencies
         uses: actions/cache@v4
         with:
@@ -44,38 +41,48 @@ jobs:
           restore-keys: |
             maven-
 
-      # 4. Build the project with Gradle
       - name: Build with Gradle
         run: |
           cd diff-java-tool
           ./gradlew clean build
 
-      # 5. Run unit tests
       - name: Run Unit Tests
         run: |
           cd diff-java-tool
           ./gradlew test
 
-      # 6. Create checkstyle-tester directory within the workspace
-      - name: Create checkstyle-tester directory
-        run: mkdir -p "${{ github.workspace }}/checkstyle-tester"
-
-      # 7. Download pom.xml
-      - name: Download pom.xml
+      - name: Setup checkstyle-tester environment
         run: |
-          curl --fail-with-body -L -o \
-          "${{ github.workspace }}/checkstyle-tester/pom.xml" "${{ env.POM_URL }}"
+          echo "Current working directory:"
+          pwd
+          echo "Contents of current directory:"
+          ls -la
 
-      # 8. Download DiffTool JAR
+          # Create checkstyle-tester directory
+          mkdir -p checkstyle-tester
+          cd checkstyle-tester
+
+          # Download pom.xml
+          curl --fail-with-body -L -o pom.xml "${{ env.POM_URL }}"
+
+          # Create necessary subdirectories
+          mkdir -p src/main/java
+          mkdir -p repositories
+          mkdir -p reports/diff
+
+          echo "Verifying directory structure:"
+          ls -R
+
+          cd ..
+
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
         with:
           repository: "relentless-pursuit/test-configs"
           tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
           fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-          out-file-path: "${{ github.workspace }}/checkstyle-tester"
+          out-file-path: "checkstyle-tester"
 
-      # 9. Download patch-diff-report-tool JAR
       - name: Download patch-diff-report-tool JAR
         uses: robinraju/release-downloader@v1.8
         with:
@@ -83,68 +90,56 @@ jobs:
           tag: "patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}"
           fileName: >-
             patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
-          out-file-path: "${{ github.workspace }}/checkstyle-tester"
+          out-file-path: "checkstyle-tester"
 
-      # 10. Create necessary directories
-      - name: Create necessary directories
+      - name: Prepare and Execute DiffTool
         run: |
-          cd "${{ github.workspace }}/checkstyle-tester"
-          mkdir -p src/main/java
-          mkdir -p repositories
-          mkdir -p reports/diff
+          cd checkstyle-tester
+          echo "Contents of checkstyle-tester directory:"
+          ls -la
 
-      # 11. Execute DiffTool.jar in 'diff' mode
-      - name: Execute DiffTool.jar in Diff Mode
-        run: |
-          # Define the directory where DiffTool.jar expects resources
+          # Define variables
           CHECKSTYLE_TESTER_DIR="${{ github.workspace }}/checkstyle-tester"
-      
-          cd "$CHECKSTYLE_TESTER_DIR" || { echo "Failed to change directory"; exit 1; }
-      
-          # Define necessary variables based on event type
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            PR_BRANCH="${{ github.head_ref }}"  # Source branch for PRs
+            PR_BRANCH="${{ github.head_ref }}"
           else
-            PR_BRANCH="master"   # Use the default branch for push events
+            PR_BRANCH="master"
           fi
           REPO="${{ github.workspace }}/checkstyle"
           CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
           PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/project.properties"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-      
-          echo "Contents of checkstyle-tester directory:"
-          ls -la
-          echo "-------------------------"
-      
+
           # Log variables
           echo "PR_BRANCH: $PR_BRANCH"
           echo "REPO: $REPO"
           echo "CONFIG_XML: $CONFIG_XML"
           echo "PROJECTS_PROPERTIES: $PROJECTS_PROPERTIES"
           echo "DIFFTOOL_JAR: $DIFFTOOL_JAR"
-      
-          # Ensure the localGitRepo exists
+
+          # Clone checkstyle repository if not exists
           if [ ! -d "$REPO/.git" ]; then
             echo "Cloning checkstyle repository into $REPO"
             git clone https://github.com/checkstyle/checkstyle.git "$REPO" || { echo "Failed to clone repository"; exit 1; }
           fi
-      
+
           # Fetch the default branch
           cd "$REPO" || { echo "Failed to change directory to $REPO"; exit 1; }
           echo "Fetching default branch"
           git fetch origin || { echo "Failed to fetch from origin"; exit 1; }
           DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@') || { echo "Failed to get default branch"; exit 1; }
           echo "Default branch: $DEFAULT_BRANCH"
-      
-          echo "Current directory (checkstyle repo):"
-          pwd
-      
+
           # Return to the checkstyle-tester directory
           cd "$CHECKSTYLE_TESTER_DIR" || { echo "Failed to return to checkstyle-tester directory"; exit 1; }
-      
-          echo "Current directory (should be checkstyle-tester):"
-          pwd
-      
+
+          # Ensure reports/diff directory exists and is not empty
+          mkdir -p reports/diff
+          if [ ! "$(ls -A reports/diff)" ]; then
+            echo "reports/diff is empty, creating dummy file"
+            touch reports/diff/dummy.txt
+          fi
+
           # Run DiffTool in 'diff' mode
           echo "Running DiffTool.jar in 'diff' mode"
           java -jar "$DIFFTOOL_JAR" \
@@ -155,35 +150,33 @@ jobs:
             --patchConfig "$CONFIG_XML" \
             --listOfProjects "$PROJECTS_PROPERTIES" || { echo "DiffTool execution failed"; exit 1; }
 
-      # 12. Execute DiffTool.jar with invalid arguments to print help
+          # Check contents of reports directory after execution
+          echo "Contents of reports directory after DiffTool execution:"
+          ls -R reports
+
       - name: Execute DiffTool.jar with Invalid Arguments
         run: |
-          cd "${{ github.workspace }}/checkstyle-tester"
+          cd checkstyle-tester
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-
-          # Execute with invalid arguments to test error handling
           echo "Running DiffTool.jar with invalid arguments"
           java -jar "$DIFFTOOL_JAR" --invalidArg || echo "Handled invalid arguments gracefully"
 
-      # 13. Verify no exceptions occurred during DiffTool execution
       - name: Verify DiffTool Execution
         run: |
           echo "DiffTool executed successfully."
 
-      # 14. Upload build reports and logs on failure
-      - name: Upload Build Reports on Failure
-        if: failure()
+      - name: Upload Build Reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-reports
           path: |
             diff-java-tool/build/reports
             diff-java-tool/build/test-results
+            checkstyle-tester/reports
             checkstyle-tester/patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
 
-      # 15. Cleanup (optional)
       - name: Cleanup Temporary Files
         if: always()
         run: |
           rm -rf checkstyle-tester
-
