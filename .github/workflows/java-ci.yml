@@ -95,7 +95,13 @@ jobs:
           fileName: >-
             patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
           out-file-path: ".ci-temp/test-configs/checkstyle-tester"
-          
+
+      - name: Create necessary directories
+        run: |
+          mkdir -p src/main/java
+          mkdir -p repositories
+          mkdir -p reports/diff
+    
       # 10. Execute DiffTool.jar in 'diff' mode
       - name: Execute DiffTool.jar in Diff Mode
         run: |
