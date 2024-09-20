@@ -7,7 +7,6 @@ on:
     branches: [ main ] 
   workflow_dispatch:  # Allows manual triggering
 
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -25,17 +24,8 @@ jobs:
         with:
           repository: checkstyle-gsoc/test-configs
           token: ${{ secrets.GITHUB_TOKEN }}
-          ssh-strict: true
-          ssh-user: git
-          persist-credentials: true
           clean: true
-          sparse-checkout-cone-mode: true
           fetch-depth: 1
-          fetch-tags: false
-          show-progress: true
-          lfs: false
-          submodules: false
-          set-safe-directory: true
 
       # 2. Set up JDK 21
       - name: Set up JDK ${{ env.JAVA_VERSION }}
@@ -66,16 +56,16 @@ jobs:
           cd diff-java-tool
           ./gradlew test
 
-      # 6. Create checkstyle-tester directory at expected location
-      - name: Create checkstyle-tester directory at expected location
-        run: mkdir -p "${{ github.workspace }}/../checkstyle-tester"
-      
+      # 6. Create checkstyle-tester directory within the workspace
+      - name: Create checkstyle-tester directory
+        run: mkdir -p "${{ github.workspace }}/checkstyle-tester"
+
       # 7. Download pom.xml
       - name: Download pom.xml
         run: |
           curl --fail-with-body -L -o \
-          "${{ github.workspace }}/../checkstyle-tester/pom.xml" "${{ env.POM_URL }}"
-      
+          "${{ github.workspace }}/checkstyle-tester/pom.xml" "${{ env.POM_URL }}"
+
       # 8. Download DiffTool JAR
       - name: Download DiffTool JAR
         uses: robinraju/release-downloader@v1.8
@@ -83,8 +73,8 @@ jobs:
           repository: "relentless-pursuit/test-configs"
           tag: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}"
           fileName: "diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-          out-file-path: "${{ github.workspace }}/../checkstyle-tester"
-      
+          out-file-path: "${{ github.workspace }}/checkstyle-tester"
+
       # 9. Download patch-diff-report-tool JAR
       - name: Download patch-diff-report-tool JAR
         uses: robinraju/release-downloader@v1.8
@@ -93,13 +83,21 @@ jobs:
           tag: "patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}"
           fileName: >-
             patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
-          out-file-path: "${{ github.workspace }}/../checkstyle-tester"
-      
-      # 10. Execute DiffTool.jar in 'diff' mode
+          out-file-path: "${{ github.workspace }}/checkstyle-tester"
+
+      # 10. Create necessary directories
+      - name: Create necessary directories
+        run: |
+          cd "${{ github.workspace }}/checkstyle-tester"
+          mkdir -p src/main/java
+          mkdir -p repositories
+          mkdir -p reports/diff
+
+      # 11. Execute DiffTool.jar in 'diff' mode
       - name: Execute DiffTool.jar in Diff Mode
         run: |
           # Define the directory where DiffTool.jar expects resources
-          CHECKSTYLE_TESTER_DIR="${{ github.workspace }}/../checkstyle-tester"
+          CHECKSTYLE_TESTER_DIR="${{ github.workspace }}/checkstyle-tester"
       
           cd "$CHECKSTYLE_TESTER_DIR" || { echo "Failed to change directory"; exit 1; }
       
@@ -157,35 +155,10 @@ jobs:
             --patchConfig "$CONFIG_XML" \
             --listOfProjects "$PROJECTS_PROPERTIES" || { echo "DiffTool execution failed"; exit 1; }
 
-      # 11. Execute DiffTool.jar in 'single' mode (optional, after 'diff' mode is stable)
-      # - name: Execute DiffTool.jar in Single Mode
-      #   run: |
-      #     cd .ci-temp/test-configs/checkstyle-tester
-
-      #     # Define necessary variables based on event type
-      #     if [ "${{ github.event_name }}" = "pull_request" ]; then
-      #       PR_BRANCH="${{ github.head_ref }}"  # Source branch for PRs
-      #     else
-      #       PR_BRANCH="${{ github.ref_name }}"   # Current branch for push events
-      #     fi
-      #     REPO="${{ github.workspace }}/checkstyle"
-      #     CONFIG_XML="${{ github.workspace }}/${{ env.CONFIG_DIR }}/config.xml"
-      #     PROJECTS_PROPERTIES="${{ github.workspace }}/${{ env.CONFIG_DIR }}/projects.properties"
-      #     DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
-
-      #     # Run DiffTool in 'single' mode
-      #     echo "Running DiffTool.jar in 'single' mode"
-      #     java -jar "$DIFFTOOL_JAR" \
-      #       --localGitRepo "$REPO" \
-      #       --patchBranch "feature/single-mode" \  # Adjust as needed
-      #       --patchConfig "$CONFIG_XML" \
-      #       --listOfProjects "$PROJECTS_PROPERTIES" \
-      #       --mode single
-
       # 12. Execute DiffTool.jar with invalid arguments to print help
       - name: Execute DiffTool.jar with Invalid Arguments
         run: |
-          cd .ci-temp/test-configs/checkstyle-tester
+          cd "${{ github.workspace }}/checkstyle-tester"
           DIFFTOOL_JAR="diff-java-tool-${{ env.DIFF_TOOL_VERSION }}.jar"
 
           # Execute with invalid arguments to test error handling
@@ -206,10 +179,11 @@ jobs:
           path: |
             diff-java-tool/build/reports
             diff-java-tool/build/test-results
-            .ci-temp/test-configs/checkstyle-tester/patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
+            checkstyle-tester/patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
 
       # 15. Cleanup (optional)
       - name: Cleanup Temporary Files
         if: always()
         run: |
-          rm -rf .ci-temp
+          rm -rf checkstyle-tester
+
