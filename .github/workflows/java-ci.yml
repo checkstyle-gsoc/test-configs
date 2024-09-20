@@ -94,7 +94,8 @@ jobs:
           tag: "patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}"
           fileName: >-
             patch-diff-report-tool-${{ env.PATCH_DIFF_TOOL_VERSION }}-jar-with-dependencies.jar
-          out-file-path: ".ci-temp/test-configs/checkstyle-tester"
+          out-file-path: "${{ github.workspace }}/../checkstyle-tester"
+
 
       - name: Create necessary directories
         run: |
